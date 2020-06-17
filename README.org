@@ -1,0 +1,114 @@
+* Minimal reproduction of figwheel warnings when using hashp from ClojureScript
+** Effects
+=Figwheel:WARNING= warning messages appear on first jack-in and compilation, but not on subsequent jack-ins
+
+The warnings only appear when the =target/public/cljs-out= directory does not already exist.
+
+Once it exists, subsequent compilations lead to the expected output.
+
+** Actual
+#+BEGIN_EXAMPLE
+;; Connected to nREPL server - nrepl://localhost:36447
+;; CIDER 0.25.0snapshot (package: 20200511.1025), nREPL 0.7.0
+;; Clojure 1.10.1, Java 11.0.7
+;;     Docs: (doc function-name)
+;;           (find-doc part-of-name)
+;;   Source: (source function-name)
+;;  Javadoc: (javadoc java-object-or-class)
+;;     Exit: <C-c C-q>
+;;  Results: Stored in vars *1, *2, *3, an exception in *e;
+;;  Startup: /usr/local/bin/clojure -Sdeps '{:deps {nrepl {:mvn/version "0.7.0"} cider/piggieback {:mvn/version "0.5.0"} refactor-nrepl {:mvn/version "2.5.0"} cider/cider-nrepl {:mvn/version "0.25.0-alpha1"}}}' -m nrepl.cmdline --middleware '["refactor-nrepl.middleware/wrap-refactor", "cider.nrepl/cider-middleware", "cider.piggieback/wrap-cljs-repl"]'
+;;
+;; ClojureScript REPL type: figwheel-main
+;; ClojureScript REPL init form: (do (require 'figwheel.main) (figwheel.main/start :dev))
+;;
+[Figwheel:WARNING] Making target directory "target" and re-adding it to the classpath (this only needs to be done when the target directory doesn't exist)
+[Figwheel] Compiling build dev to "target/public/cljs-out/dev-main.js"
+[Figwheel:WARNING] Compile Warning   target/public/cljs-out/dev/rewrite_clj/reader.cljs   line:181  column:14
+
+  var: cljs.tools.reader/read-token is not public
+
+  176          (aget matches 0)
+  177          matches))))
+  178
+  179  (defn read-keyword
+  180    [^not-native reader initch]
+  181    (let [tok (cljs.tools.reader/read-token reader :keyword (read-char reader))
+                    ^---
+  182          a (re-matches* (re-pattern "^[:]?([^0-9/].*/)?([^0-9/][^/]*)$") tok)
+  183          token (aget a 0)
+  184          ns (aget a 1)
+  185          name (aget a 2)]
+  186      (if (or (and (not (undefined? ns))
+
+[Figwheel:WARNING] Compile Warning   target/public/cljs-out/dev/rewrite_clj/parser/core.cljs   line:149  column:10
+
+  var: rewrite-clj.reader/whitespace? is not public
+
+  144
+  145  (defn- dispatch
+  146    [c]
+  147    (cond (nil? c)                        parse-eof
+  148          (identical? c *delimiter*)      reader/ignore
+  149          (reader/whitespace? c)          parse-whitespace
+                ^---
+  150          (identical? c \^)               parse-meta
+  151          (identical? c \#)               parse-sharp
+  152          (identical? c \()               parse-list
+  153          (identical? c \[)               parse-vector
+  154          (identical? c \{)               parse-map
+
+[Figwheel] Successfully compiled build dev to "target/public/cljs-out/dev-main.js" in 7.433 seconds.
+[Figwheel] Watching paths: ("src/cljs") to compile build - dev
+[Figwheel] Starting Server at http://localhost:9500
+[Figwheel] Starting REPL
+Prompt will show when REPL connects to evaluation environment (i.e. a REPL hosting webpage)
+Figwheel Main Controls:
+          (figwheel.main/stop-builds id ...)  ;; stops Figwheel autobuilder for ids
+          (figwheel.main/start-builds id ...) ;; starts autobuilder focused on ids
+          (figwheel.main/reset)               ;; stops, cleans, reloads config, and starts autobuilder
+          (figwheel.main/build-once id ...)   ;; builds source one time
+          (figwheel.main/clean id ...)        ;; deletes compiled cljs target files
+          (figwheel.main/status)              ;; displays current state of system
+Figwheel REPL Controls:
+          (figwheel.repl/conns)               ;; displays the current connections
+          (figwheel.repl/focus session-name)  ;; choose which session name to focus on
+In the cljs.user ns, controls can be called without ns ie. (conns) instead of (figwheel.repl/conns)
+    Docs: (doc function-name-here)
+    Exit: :cljs/quit
+ Results: Stored in vars *1, *2, *3, *e holds last exception object
+Opening URL http://localhost:9500
+To quit, type: :cljs/quit
+nil
+#+END_EXAMPLE
+
+
+** Expected
+#+BEGIN_EXAMPLE
+[Figwheel] Compiling build dev to "target/public/cljs-out/dev-main.js"
+[Figwheel] Successfully compiled build dev to "target/public/cljs-out/dev-main.js" in 2.464 seconds.
+[Figwheel] Watching paths: ("src/cljs") to compile build - dev
+[Figwheel] Starting Server at http://localhost:9500
+[Figwheel] Starting REPL
+Prompt will show when REPL connects to evaluation environment (i.e. a REPL hosting webpage)
+Figwheel Main Controls:
+          (figwheel.main/stop-builds id ...)  ;; stops Figwheel autobuilder for ids
+          (figwheel.main/start-builds id ...) ;; starts autobuilder focused on ids
+          (figwheel.main/reset)               ;; stops, cleans, reloads config, and starts autobuilder
+          (figwheel.main/build-once id ...)   ;; builds source one time
+          (figwheel.main/clean id ...)        ;; deletes compiled cljs target files
+          (figwheel.main/status)              ;; displays current state of system
+Figwheel REPL Controls:
+          (figwheel.repl/conns)               ;; displays the current connections
+          (figwheel.repl/focus session-name)  ;; choose which session name to focus on
+In the cljs.user ns, controls can be called without ns ie. (conns) instead of (figwheel.repl/conns)
+    Docs: (doc function-name-here)
+    Exit: :cljs/quit
+ Results: Stored in vars *1, *2, *3, *e holds last exception object
+Opening URL http://localhost:9500
+To quit, type: :cljs/quit
+#+END_EXAMPLE
+
+** Steps to reproduce
+- Clone this project
+- =M-x cider-jack-in-clj&cljs=
